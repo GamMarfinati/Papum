@@ -33,7 +33,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
               full_name: name,
               pix: pix,
               phone: phone
-            }
+            },
+            emailRedirectTo: window.location.origin
           }
         });
         if (signUpError) throw signUpError;

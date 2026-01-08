@@ -82,6 +82,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
         phone, 
         roommates: parseInt(roommates) || 2,
         houseId: data.id,
+        houseName: data.name,
         sharePercentage: parseFloat(sharePercentage) || 50
       });
     } catch (err: any) {
@@ -115,6 +116,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
         phone: data.phone, 
         roommates: data.roommates,
         houseId: data.id,
+        houseName: data.name,
         sharePercentage: joiningPercentage
       });
     } catch (err: any) {
@@ -198,9 +200,39 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
                 {recentGroups.map(group => (
                   <div key={group.id} className="relative group/item">
                     <button 
-                      onClick={() => {
-                        setJoinId(group.id);
-                        setMode('join');
+                      onClick={async () => {
+                        if (initialProfile?.name) {
+                          // Auto Join if logged in
+                          setLoading(true);
+                          try {
+                            const { data, error: fetchError } = await supabase
+                              .from('house_config')
+                              .select('*')
+                              .eq('id', group.id)
+                              .single();
+                            if (fetchError || !data) throw new Error('Grupo não encontrado');
+                            
+                            const joiningPercentage = 100 - (data.share_percentage || 50);
+                            onRegister({ 
+                              name: initialProfile.name, 
+                              pix: data.pix, 
+                              phone: data.phone, 
+                              roommates: data.roommates,
+                              houseId: data.id,
+                              houseName: data.name,
+                              sharePercentage: joiningPercentage
+                            });
+                          } catch (err: any) {
+                            setError(err.message);
+                            setJoinId(group.id);
+                            setMode('join');
+                          } finally {
+                            setLoading(false);
+                          }
+                        } else {
+                          setJoinId(group.id);
+                          setMode('join');
+                        }
                       }}
                       className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-emerald-50 transition-colors group"
                     >
@@ -265,7 +297,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
             {mode === 'create' ? 'Configurar Grupo' : 'Entrar no Grupo'}
           </h1>
           <p className="text-slate-500 mt-2 font-medium">
-            {mode === 'create' ? 'Defina como vocês dividirão as contas.' : 'Peça o ID do grupo para seu parceiro(a).'}
+            {mode === 'create' ? 'Defina como vocês dividirão as contas.' : 'Peça o ID do grupo para o(a) participante.'}
           </p>
         </div>
 

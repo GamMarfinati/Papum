@@ -74,11 +74,20 @@ const App: React.FC = () => {
         const parsedUser = JSON.parse(savedUser);
         // Merge auth profile with house context
         const mergedUser = { ...parsedUser, ...profile };
-        setUser(mergedUser);
-        setView('dashboard');
+        
         if (mergedUser.houseId) {
+          // Fetch house name if missing
+          if (!mergedUser.houseName) {
+             const { data: hData } = await supabase.from('house_config').select('name').eq('id', mergedUser.houseId).single();
+             if (hData) mergedUser.houseName = hData.name;
+          }
+          
+          setUser(mergedUser);
+          setView('dashboard');
           fetchExpenses(mergedUser.houseId);
           subscribeToExpenses(mergedUser.houseId);
+        } else {
+          setView('registration');
         }
       } else {
         setView('registration');
@@ -173,7 +182,7 @@ const App: React.FC = () => {
     // Save to recent groups
     if (newUser.houseId) {
       const recentGroups = JSON.parse(localStorage.getItem('papum_recent_groups') || '[]');
-      const groupName = newUser.name.endsWith('s Group') ? newUser.name : `${newUser.name}'s Group`;
+      const groupName = newUser.houseName || (newUser.name.endsWith('s Group') ? newUser.name : `${newUser.name}'s Group`);
       
       // Prevent duplicates
       const filteredGroups = recentGroups.filter((g: any) => g.id !== newUser.houseId);
@@ -422,7 +431,7 @@ const App: React.FC = () => {
         <div className="bg-white border-t border-slate-100 p-4 fixed bottom-0 left-0 right-0 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)]">
            <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-center sm:text-left">
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Seu ID do Grupo (Convide sua esposa):</p>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">ID do Grupo (Convide o(a) participante):</p>
                 <p className="text-sm font-mono font-bold text-slate-600 select-all">{user.houseId}</p>
               </div>
               

@@ -34,7 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
   const balance = myTotalPaid - myRequiredContribution;
 
   // 3. Find partner info
-  const partnerName = expenses.find(e => e.paidBy !== user.name)?.paidBy || "Parceiro(a)";
+  const partnerName = expenses.find(e => e.paidBy !== user.name)?.paidBy || "Participante";
   const baseShare = user.sharePercentage ?? 50;
 
   const copyPix = () => {
@@ -60,8 +60,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
     <div className="p-4 space-y-6 max-w-4xl mx-auto pb-20">
       <header className="flex justify-between items-center py-6">
         <div>
+          <h1 className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-1">{user.houseName || 'Meu Grupo'}</h1>
           <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Olá, {user.name.split(' ')[0]}!</h2>
-          <p className="text-slate-500 font-medium font-inter">Divisão flexível de gastos</p>
+          <p className="text-slate-500 font-medium font-inter">Resumo do Mês</p>
         </div>
         <div className="flex items-center space-x-3">
           <button 

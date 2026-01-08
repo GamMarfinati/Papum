@@ -5,6 +5,7 @@ export interface User {
   phone: string;
   roommates: number;
   houseId?: string;
+  houseName?: string;
   sharePercentage?: number; // % that this specific user should pay
 }
 
