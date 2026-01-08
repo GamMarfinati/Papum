@@ -381,8 +381,21 @@ const App: React.FC = () => {
   };
 
   const handleLeaveHouse = () => {
-    localStorage.removeItem('house_user');
-    setUser(null);
+    if (user) {
+      const { houseId, houseName, ...profileOnly } = user;
+      const profileUser = profileOnly as User;
+      setUser(profileUser);
+      // Keep profile in local storage, but without house info
+      localStorage.setItem('house_user', JSON.stringify(profileUser));
+      
+      // Clear cloud preference so we don't auto-rejoin on reload
+      supabase.auth.updateUser({
+        data: { last_group_id: null, last_group_name: null }
+      });
+    } else {
+      localStorage.removeItem('house_user');
+      setUser(null);
+    }
     setExpenses([]);
     setView('registration');
   };
