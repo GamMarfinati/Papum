@@ -38,7 +38,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
       const { data, error: insertError } = await supabase
         .from('house_config')
         .insert([{ 
-          name: `${name}'s House`, 
+          name: `${name}'s Group`, 
           pix, 
           phone, 
           roommates: parseInt(roommates) || 2,
@@ -58,7 +58,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
         sharePercentage: parseFloat(sharePercentage) || 50
       });
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar casa');
+      setError(err.message || 'Erro ao criar grupo');
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
         .eq('id', joinId)
         .single();
 
-      if (fetchError || !data) throw new Error('ID da Casa não encontrado');
+      if (fetchError || !data) throw new Error('ID do Grupo não encontrado');
 
       // For the joining person, we assume they take the remaining percentage (100 - share_percentage)
       const joiningPercentage = 100 - (data.share_percentage || 50);
@@ -156,7 +156,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
               onClick={() => setMode('join')}
               className="w-full bg-white text-slate-900 border-2 border-slate-100 font-bold py-4 rounded-2xl hover:bg-slate-50 transition-all active:scale-95"
             >
-              Entrar em um grupo existente
+              Entrar em um grupo
             </button>
           </div>
 
@@ -221,10 +221,10 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
 
         <div className="text-center">
           <h1 className="text-3xl font-bold text-slate-800 tracking-tight">
-            {mode === 'create' ? 'Configurar Casa' : 'Entrar na Casa'}
+            {mode === 'create' ? 'Configurar Grupo' : 'Entrar no Grupo'}
           </h1>
           <p className="text-slate-500 mt-2">
-            {mode === 'create' ? 'Defina como vocês dividirão as contas.' : 'Peça o ID da casa para seu parceiro(a).'}
+            {mode === 'create' ? 'Defina como vocês dividirão as contas.' : 'Peça o ID do grupo para seu parceiro(a).'}
           </p>
         </div>
 
@@ -321,7 +321,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
             disabled={loading}
             className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl shadow-xl transition-all transform active:scale-95 disabled:opacity-50"
           >
-            {loading ? 'Carregando...' : (mode === 'create' ? 'Configurar Casa' : 'Entrar Agora')}
+            {loading ? 'Carregando...' : (mode === 'create' ? 'Configurar Grupo' : 'Entrar Agora')}
           </button>
         </form>
       </div>

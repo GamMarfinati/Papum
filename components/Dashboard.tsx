@@ -45,7 +45,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
           <button 
             onClick={onLeaveHouse}
             className="text-slate-400 hover:text-rose-500 p-2 rounded-xl hover:bg-rose-50 transition-all group flex items-center space-x-1"
-            title="Sair desta casa"
+            title="Sair deste grupo"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -100,7 +100,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
             </span>
             <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded-lg">Mensal</span>
           </div>
-          <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest">Gasto Total da Casa</h3>
+          <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest">Gasto Total do Grupo</h3>
           <p className="text-2xl font-black text-slate-800 mt-1">R$ {totalExpenses.toFixed(2)}</p>
           <div className="mt-4 pt-4 border-t border-slate-50 text-[10px] text-slate-400 flex flex-col gap-1 uppercase font-bold tracking-tighter">
             <span>Sua contribuição exigida: R$ {myRequiredContribution.toFixed(2)}</span>
