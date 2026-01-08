@@ -124,6 +124,11 @@ const App: React.FC = () => {
       phone: session.user.user_metadata.phone || '',
     };
     
+    // Recover recent groups from metadata if available
+    if (session.user.user_metadata.group_list) {
+      localStorage.setItem('papum_recent_groups', JSON.stringify(session.user.user_metadata.group_list));
+    }
+
     const savedUser = localStorage.getItem('house_user');
     let mergedUser: User | null = null;
 
@@ -138,6 +143,11 @@ const App: React.FC = () => {
         roommates: 2,
         sharePercentage: 50
       };
+    } else {
+      // Even if no last group, pass the profile to registration to enable auto-join
+      setUser(profile as User);
+      setView('registration');
+      return;
     }
 
     if (mergedUser) {
@@ -148,8 +158,6 @@ const App: React.FC = () => {
         fetchExpenses(mergedUser.houseId);
         subscribeToExpenses(mergedUser.houseId);
       }
-    } else {
-      setView('registration');
     }
   };
 

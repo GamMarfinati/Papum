@@ -22,6 +22,18 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
   const [error, setError] = useState('');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
+  /* Load recent groups */
+  const [recentGroups, setRecentGroups] = useState<any[]>([]);
+  React.useEffect(() => {
+    const loadGroups = () => {
+      const groups = JSON.parse(localStorage.getItem('papum_recent_groups') || '[]');
+      setRecentGroups(groups);
+    };
+    loadGroups();
+    window.addEventListener('papum-groups-updated', loadGroups);
+    return () => window.removeEventListener('papum-groups-updated', loadGroups);
+  }, [initialProfile]);
+
   // Load Profile from localStorage on mount
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -126,10 +138,6 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
     }
   };
 
-  const [recentGroups, setRecentGroups] = useState<{id: string, name: string}[]>(() => {
-    const saved = localStorage.getItem('papum_recent_groups');
-    return saved ? JSON.parse(saved) : [];
-  });
 
   const handleWhatsAppShare = () => {
     const message = `Oi! Vamos usar o PaPum para dividir nossas contas de casa: ${window.location.origin}`;
