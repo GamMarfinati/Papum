@@ -1,7 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Expense } from '../types';
-import { analyzeExpenses } from '../services/geminiService';
 
 interface MonthListProps {
   expenses: Expense[];
@@ -11,18 +10,8 @@ interface MonthListProps {
 }
 
 const MonthList: React.FC<MonthListProps> = ({ expenses, onBack, onAddExpense, onEditExpense }) => {
-  const [insight, setInsight] = useState<string>('Carregando análise inteligente...');
-  
   const currentMonthYear = new Date().toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
   const totalValue = expenses.reduce((sum, e) => sum + e.value, 0);
-
-  useEffect(() => {
-    const fetchInsight = async () => {
-      const result = await analyzeExpenses(expenses);
-      setInsight(result);
-    };
-    fetchInsight();
-  }, [expenses]);
 
   return (
     <div className="min-h-screen pb-32 bg-white">
@@ -41,18 +30,6 @@ const MonthList: React.FC<MonthListProps> = ({ expenses, onBack, onAddExpense, o
       </header>
 
       <div className="p-4 max-w-2xl mx-auto space-y-6">
-        {/* Gemini Insight */}
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-4 text-white shadow-lg">
-          <div className="flex items-center space-x-2 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M11.3 1.047a1 1 0 01.897.95l1.418 15.924a1 1 0 01-1.087 1.085l-15.924-1.418a1 1 0 01-.95-.897L1.047 8.7a1 1 0 01.897-.95l15.924-1.418a1 1 0 011.087 1.085L17.536 23.336a1 1 0 01-.897.95L.715 22.868a1 1 0 01-1.085-1.087l1.418-15.924a1 1 0 01.95-.897l15.924 1.418z" />
-              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1z" />
-            </svg>
-            <span className="text-xs font-bold uppercase tracking-wider">Insight IA</span>
-          </div>
-          <p className="text-sm font-medium leading-relaxed italic">{insight}</p>
-        </div>
-
         {expenses.length === 0 ? (
           <div className="text-center py-20 text-slate-400">
             <svg className="mx-auto h-12 w-12 opacity-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
