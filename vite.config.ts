@@ -4,7 +4,14 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
+    // Load env file based on `mode` in the current working directory.
+    // Set the third parameter to '' to load all envs regardless of the `VITE_` prefix.
+    const env = loadEnv(mode, process.cwd(), '');
+    
+    // Fallback to process.env if variables are not in the .env file (common in Railway/Vercel)
+    const SUPABASE_URL = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const SUPABASE_KEY = env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
     return {
       server: {
         port: 3000,
@@ -36,8 +43,9 @@ export default defineConfig(({ mode }) => {
         })
       ],
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.VITE_SUPABASE_URL': JSON.stringify(SUPABASE_URL),
+        'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(SUPABASE_KEY),
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || process.env.GEMINI_API_KEY)
       },
       resolve: {
         alias: {
