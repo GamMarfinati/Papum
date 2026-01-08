@@ -142,6 +142,57 @@ const App: React.FC = () => {
     }
   };
 
+  const handleUpdateGroup = async (groupData: { name?: string, pix?: string, sharePercentage?: number }) => {
+    if (!user?.houseId) return;
+
+    const { error } = await supabase
+      .from('house_config')
+      .update({
+        name: groupData.name,
+        pix: groupData.pix,
+        share_percentage: groupData.sharePercentage
+      })
+      .eq('id', user.houseId);
+
+    if (error) {
+      console.error('Error updating group:', error);
+      alert('Erro ao atualizar grupo');
+      return;
+    }
+
+    // Update local state and storage
+    const updatedUser = { ...user, ...groupData };
+    setUser(updatedUser);
+    localStorage.setItem('house_user', JSON.stringify(updatedUser));
+    
+    // Update recent groups name if changed
+    if (groupData.name) {
+      const recentGroups = JSON.parse(localStorage.getItem('papum_recent_groups') || '[]');
+      const updatedGroups = recentGroups.map((g: any) => 
+        g.id === user.houseId ? { ...g, name: groupData.name } : g
+      );
+      localStorage.setItem('papum_recent_groups', JSON.stringify(updatedGroups));
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!user?.houseId) return;
+    if (!confirm('TEM CERTEZA? Isso excluirá permanentemente o GRUPO e TODAS as despesas. Não há como desfazer!')) return;
+
+    // 1. Delete all expenses
+    await supabase.from('expenses').delete().eq('house_id', user.houseId);
+    
+    // 2. Delete house config
+    await supabase.from('house_config').delete().eq('id', user.houseId);
+
+    // 3. Clear local list
+    const recentGroups = JSON.parse(localStorage.getItem('papum_recent_groups') || '[]');
+    const filteredGroups = recentGroups.filter((g: any) => g.id !== user.houseId);
+    localStorage.setItem('papum_recent_groups', JSON.stringify(filteredGroups));
+
+    handleLeaveHouse();
+  };
+
   const handleDeleteExpense = async (id: string) => {
     const { error } = await supabase
       .from('expenses')
@@ -189,6 +240,8 @@ const App: React.FC = () => {
           expenses={expenses} 
           onNavigateToMonth={() => setView('month_list')} 
           onLeaveHouse={handleLeaveHouse}
+          onUpdateGroup={handleUpdateGroup}
+          onDeleteGroup={handleDeleteGroup}
         />
       )}
 
@@ -258,8 +311,13 @@ const App: React.FC = () => {
           from { transform: translateY(100%); }
           to { transform: translateY(0); }
         }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
         .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
         .animate-slideUp { animation: slideUp 0.3s ease-out forwards; }
+        .animate-scaleIn { animation: scaleIn 0.2s ease-out forwards; }
       `}</style>
     </div>
   );

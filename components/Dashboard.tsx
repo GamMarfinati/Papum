@@ -7,10 +7,13 @@ interface DashboardProps {
   expenses: Expense[];
   onNavigateToMonth: () => void;
   onLeaveHouse: () => void;
+  onUpdateGroup?: (data: { name: string, pix: string, sharePercentage: number }) => void;
+  onDeleteGroup?: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth, onLeaveHouse }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth, onLeaveHouse, onUpdateGroup, onDeleteGroup }) => {
   const [copied, setCopied] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   
   // 1. Calculate totals
   const totalExpenses = expenses.reduce((sum, e) => sum + e.value, 0);
@@ -34,6 +37,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Settings Form State
+  const [editName, setEditName] = useState(user.name);
+  const [editPix, setEditPix] = useState(user.pix);
+  const [editShare, setEditShare] = useState(user.sharePercentage || 50);
+
+  const handleUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onUpdateGroup) {
+      onUpdateGroup({ name: editName, pix: editPix, sharePercentage: editShare });
+      setShowSettings(false);
+    }
+  };
+
   return (
     <div className="p-4 space-y-6 max-w-4xl mx-auto pb-20">
       <header className="flex justify-between items-center py-6">
@@ -41,7 +57,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
           <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Olá, {user.name.split(' ')[0]}!</h2>
           <p className="text-slate-500 font-medium font-inter">Divisão flexível de gastos</p>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={() => setShowSettings(true)}
+            className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-emerald-600 transition-all shadow-sm"
+            title="Configurações do Grupo"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
           <button 
             onClick={onLeaveHouse}
             className="text-slate-400 hover:text-rose-500 p-2 rounded-xl hover:bg-rose-50 transition-all group flex items-center space-x-1"
@@ -57,6 +83,69 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
           </div>
         </div>
       </header>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-scaleIn">
+            <h3 className="text-2xl font-black text-slate-900 mb-6">Ajustes do Grupo</h3>
+            
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nome do Perfil</label>
+                <input 
+                  type="text" 
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Chave Pix</label>
+                <input 
+                  type="text" 
+                  value={editPix}
+                  onChange={(e) => setEditPix(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sua Parte Padrão (%)</label>
+                <input 
+                  type="range" min="0" max="100" step="5"
+                  value={editShare}
+                  onChange={(e) => setEditShare(parseInt(e.target.value))}
+                  className="w-full h-2 bg-emerald-100 rounded-lg appearance-none cursor-pointer accent-emerald-600 mb-2"
+                />
+                <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
+                   <span>Você: {editShare}%</span>
+                   <span>Parceiro: {100-editShare}%</span>
+                </div>
+              </div>
+
+              <div className="pt-6 space-y-3">
+                <button type="submit" className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all">
+                  Salvar Mudanças
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setShowSettings(false)}
+                  className="w-full bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => { if(onDeleteGroup) { onDeleteGroup(); setShowSettings(false); } }}
+                  className="w-full bg-rose-50 text-rose-600 font-bold py-4 rounded-2xl hover:bg-rose-100 transition-all mt-4 border border-rose-100"
+                >
+                  Excluir Grupo Permanentemente
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Settlement Alert */}
       <div className={`p-6 rounded-[2rem] border shadow-sm transition-all animate-fadeIn ${

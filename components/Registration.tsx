@@ -181,22 +181,36 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Meus grupos</h3>
               <div className="space-y-2">
                 {recentGroups.map(group => (
-                  <button 
-                    key={group.id}
-                    onClick={() => {
-                      setJoinId(group.id);
-                      setMode('join');
-                    }}
-                    className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-emerald-50 transition-colors group"
-                  >
-                    <div className="flex items-center space-x-3 text-left">
-                      <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-400 group-hover:text-emerald-600 shadow-sm font-bold">
-                        {group.name.charAt(0)}
+                  <div key={group.id} className="relative group/item">
+                    <button 
+                      onClick={() => {
+                        setJoinId(group.id);
+                        setMode('join');
+                      }}
+                      className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-emerald-50 transition-colors group"
+                    >
+                      <div className="flex items-center space-x-3 text-left">
+                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-400 group-hover:text-emerald-600 shadow-sm font-bold">
+                          {group.name.charAt(0)}
+                        </div>
+                        <span className="font-bold text-slate-700">{group.name}</span>
                       </div>
-                      <span className="font-bold text-slate-700">{group.name}</span>
-                    </div>
-                    <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </button>
+                      <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if(confirm(`Remover "${group.name}" da lista?`)) {
+                          const updated = recentGroups.filter(g => g.id !== group.id);
+                          setRecentGroups(updated);
+                          localStorage.setItem('papum_recent_groups', JSON.stringify(updated));
+                        }
+                      }}
+                      className="absolute -right-2 -top-2 p-1.5 bg-white border border-slate-100 text-slate-300 hover:text-rose-500 rounded-lg shadow-sm opacity-0 group-hover/item:opacity-100 transition-opacity"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
