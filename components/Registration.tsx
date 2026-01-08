@@ -210,7 +210,10 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
                   <div key={group.id} className="relative group/item">
                     <button 
                       onClick={async () => {
-                        if (initialProfile?.name) {
+                        // Attempt to use passed profile or fallback to local storage one
+                        const userProfile = initialProfile?.name ? initialProfile : JSON.parse(localStorage.getItem('house_user') || '{}');
+                        
+                        if (userProfile?.name) {
                           // Auto Join if logged in
                           setLoading(true);
                           try {
@@ -219,11 +222,15 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
                               .select('*')
                               .eq('id', group.id)
                               .single();
-                            if (fetchError || !data) throw new Error('Grupo não encontrado');
+                            
+                            if (fetchError || !data) {
+                               console.error('Fetch error:', fetchError); 
+                               throw new Error('Grupo não encontrado ou sem permissão.');
+                            }
                             
                             const joiningPercentage = 100 - (data.share_percentage || 50);
                             onRegister({ 
-                              name: initialProfile.name, 
+                              name: userProfile.name, 
                               pix: data.pix, 
                               phone: data.phone, 
                               roommates: data.roommates,
@@ -232,7 +239,8 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
                               sharePercentage: joiningPercentage
                             });
                           } catch (err: any) {
-                            setError(err.message);
+                            console.error('Auto-join failed:', err);
+                            setError(err.message || 'Falha ao entrar automaticamente.');
                             setJoinId(group.id);
                             setMode('join');
                           } finally {

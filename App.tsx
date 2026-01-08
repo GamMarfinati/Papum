@@ -68,7 +68,30 @@ const App: React.FC = () => {
         phone: authUser.user_metadata.phone || '',
       };
 
-      // 3. Check for saved house context
+      // 4. Sync Groups (Two-way sync between Local and Cloud)
+      const localGroups = JSON.parse(localStorage.getItem('papum_recent_groups') || '[]');
+      const cloudGroups = authUser.user_metadata.group_list || [];
+      
+      // Merge unique groups by ID
+      const mergedGroupsMap = new Map();
+      [...cloudGroups, ...localGroups].forEach((g: any) => {
+        if (g && g.id) mergedGroupsMap.set(g.id, g);
+      });
+      const uniquemergedGroups = Array.from(mergedGroupsMap.values()).slice(0, 5); // Keep top 5
+      
+      // Update Local
+      localStorage.setItem('papum_recent_groups', JSON.stringify(uniquemergedGroups));
+      
+      // Update Cloud if different (prevent infinite loops by checking length or content)
+      const cloudIds = cloudGroups.map((g: any) => g.id).sort().join(',');
+      const mergedIds = uniquemergedGroups.map((g: any) => g.id).sort().join(',');
+      
+      if (cloudIds !== mergedIds) {
+        supabase.auth.updateUser({
+           data: { group_list: uniquemergedGroups }
+        });
+      }
+
       const savedUser = localStorage.getItem('house_user');
       let mergedUser: User | null = null;
 
@@ -100,9 +123,13 @@ const App: React.FC = () => {
           fetchExpenses(mergedUser.houseId);
           subscribeToExpenses(mergedUser.houseId);
         } else {
-          setView('registration');
+           // User has profile but no active house context
+           setUser(mergedUser); // Important: Set user so Registration gets the profile
+           setView('registration');
         }
       } else {
+        // No local user and no cloud last_group -> Just logged in fresh
+        setUser(profile as User); // Set profile for auto-join
         setView('registration');
       }
     };
