@@ -56,7 +56,7 @@ const App: React.FC = () => {
         value: parseFloat(e.value),
         category: e.category as any,
         paidBy: e.paid_by,
-        sharePercentage: e.share_percentage ? parseFloat(e.share_percentage) : undefined
+        sharePercentage: (e.share_percentage !== null && e.share_percentage !== undefined) ? parseFloat(e.share_percentage) : undefined
       }));
       setExpenses(formattedExpenses);
     }
