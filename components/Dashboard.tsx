@@ -81,12 +81,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
           <button 
             onClick={onLeaveHouse}
             className="text-slate-400 hover:text-rose-500 p-2 rounded-xl hover:bg-rose-50 transition-all group flex items-center space-x-1"
-            title="Sair deste grupo"
+            title="Sair do grupo"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">Trocar Grupo</span>
+            <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">Sair</span>
           </button>
           <div className="h-12 w-12 bg-emerald-600 text-white rounded-2xl shadow-lg shadow-emerald-100 flex items-center justify-center font-bold text-xl">
             {user.name.charAt(0)}
@@ -178,7 +178,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
                     }}
                     className="w-full bg-slate-50 text-slate-400 font-bold py-3 rounded-2xl hover:text-rose-600 transition-all text-xs"
                   >
-                    Fazer Logout
+                    Sair da Conta
                   </button>
                 )}
                 <button 
