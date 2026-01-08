@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Expense, User } from '../types';
+import SettleModal from './SettleModal';
 
 interface DashboardProps {
   user: User;
@@ -8,17 +9,20 @@ interface DashboardProps {
   onNavigateToMonth: () => void;
   onLeaveHouse: () => void;
   onUpdateGroup?: (data: { name: string, pix: string, sharePercentage: number }) => void;
-  onDeleteGroup?: () => void;
   onLogout?: () => void;
+  onSettle?: (amount: number) => void;
   triggerConfirm?: (config: { title: string, message: string, onConfirm: () => void, type?: 'danger' | 'info' }) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth, onLeaveHouse, onUpdateGroup, onDeleteGroup, onLogout, triggerConfirm }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth, onLeaveHouse, onUpdateGroup, onDeleteGroup, onLogout, onSettle, triggerConfirm }) => {
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSettleModal, setShowSettleModal] = useState(false);
   
   // 1. Calculate totals
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.value, 0);
+  const totalExpenses = expenses
+    .filter(e => e.category !== 'Pagamento')
+    .reduce((sum, e) => sum + e.value, 0);
   const myTotalPaid = expenses.filter(e => e.paidBy === user.name).reduce((sum, e) => sum + e.value, 0);
   
   // 2. Dynamic split logic based on percentage (Individual or House-wide)
@@ -173,30 +177,52 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
       <div className={`p-6 rounded-[2rem] border shadow-sm transition-all animate-fadeIn ${
         balance > 0 ? 'bg-blue-50 border-blue-100' : balance < 0 ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'
       }`}>
-        <div className="flex items-start space-x-4">
-          <div className={`p-3 rounded-2xl ${balance > 0 ? 'bg-blue-500' : balance < 0 ? 'bg-rose-500' : 'bg-slate-400'} text-white`}>
-            {balance >= 0 ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-            )}
-          </div>
-          <div>
-            <h4 className={`text-xs font-black uppercase tracking-widest mb-1 ${balance > 0 ? 'text-blue-600' : balance < 0 ? 'text-rose-600' : 'text-slate-500'}`}>
-              Resumo de Acerto
-            </h4>
-            <p className="text-slate-700 font-medium leading-tight">
-              {balance > 0 ? (
-                <>Você pagou a mais. <strong>{partnerName}</strong> deve te pagar <span className="text-blue-600 font-black">R$ {balance.toFixed(2)}</span>.</>
-              ) : balance < 0 ? (
-                <>Você pagou a menos. Você deve pagar <span className="text-rose-600 font-black">R$ {Math.abs(balance).toFixed(2)}</span> para seu parceiro(a).</>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-start space-x-4">
+            <div className={`p-3 rounded-2xl ${balance > 0 ? 'bg-blue-500' : balance < 0 ? 'bg-rose-500' : 'bg-slate-400'} text-white`}>
+              {balance >= 0 ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               ) : (
-                <>As contas estão em dia! Ninguém deve nada para ninguém.</>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
               )}
-            </p>
+            </div>
+            <div>
+              <h4 className={`text-xs font-black uppercase tracking-widest mb-1 ${balance > 0 ? 'text-blue-600' : balance < 0 ? 'text-rose-600' : 'text-slate-500'}`}>
+                {balance > 0 ? 'Saldo a Receber' : balance < 0 ? 'Saldo a Pagar' : 'Tudo em dia!'}
+              </h4>
+              <p className="text-slate-700 font-medium leading-tight text-sm">
+                {balance > 0 ? (
+                  <>Você deve receber <span className="text-blue-600 font-black">R$ {balance.toFixed(2)}</span> de <strong>{partnerName}</strong>.</>
+                ) : balance < 0 ? (
+                  <>Você deve pagar <span className="text-rose-600 font-black">R$ {Math.abs(balance).toFixed(2)}</span> para <strong>{partnerName}</strong>.</>
+                ) : (
+                  <>As contas estão em dia! Ninguém deve nada.</>
+                )}
+              </p>
+            </div>
           </div>
+
+          {balance < 0 && (
+            <button 
+              onClick={() => setShowSettleModal(true)}
+              className="w-full sm:w-auto bg-rose-600 text-white font-black px-8 py-4 rounded-2xl shadow-lg shadow-rose-100 hover:bg-rose-700 transition-all active:scale-95 text-sm"
+            >
+              Quitar Dívida
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Settle Modal */}
+      {showSettleModal && onSettle && (
+        <SettleModal 
+          user={user}
+          balance={balance}
+          partnerName={partnerName}
+          onClose={() => setShowSettleModal(false)}
+          onSettle={onSettle}
+        />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <button 

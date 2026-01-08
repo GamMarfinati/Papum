@@ -13,7 +13,7 @@ export interface Resident {
   sharePercentage: number;
 }
 
-export type ExpenseCategory = 'Casa' | 'Mercado' | 'Luz/Água' | 'Internet' | 'Outros';
+export type ExpenseCategory = 'Casa' | 'Mercado' | 'Luz/Água' | 'Internet' | 'Outros' | 'Pagamento';
 
 export interface Expense {
   id: string;

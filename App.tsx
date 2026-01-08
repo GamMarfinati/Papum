@@ -13,8 +13,27 @@ const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('loading');
   const [user, setUser] = useState<User | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [lastExpenseCount, setLastExpenseCount] = useState<number>(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+
+
+  // Notification logic
+  useEffect(() => {
+    if (expenses.length > lastExpenseCount && lastExpenseCount > 0) {
+      const newExpense = expenses[0]; // Ordered by date DESC
+      if (newExpense.category === 'Pagamento' && newExpense.paidBy !== user?.name) {
+        setConfirmConfig({
+          isOpen: true,
+          title: 'Pagamento Recebido! 💸',
+          message: `${newExpense.paidBy} acabou de registrar um pagamento de R$ ${newExpense.value.toFixed(2)}. Seu saldo foi atualizado!`,
+          type: 'info',
+          onConfirm: () => setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+        });
+      }
+    }
+    setLastExpenseCount(expenses.length);
+  }, [expenses]);
 
   // Confirm Modal State
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -285,6 +304,27 @@ const App: React.FC = () => {
     }
   };
 
+  const handleSettle = async (amount: number) => {
+    if (!user?.houseId) return;
+
+    const { error } = await supabase
+      .from('expenses')
+      .insert([{
+        name: 'Acerto de Contas',
+        date: new Date().toISOString().split('T')[0],
+        value: amount,
+        category: 'Pagamento',
+        paid_by: user.name,
+        share_percentage: 0, // Payer gets 0% of the cost, so it's a pure credit
+        house_id: user.houseId
+      }]);
+
+    if (error) {
+      console.error('Error settling debt:', error);
+      alert('Erro ao processar pagamento');
+    }
+  };
+
   const handleLeaveHouse = () => {
     localStorage.removeItem('house_user');
     setUser(null);
@@ -346,6 +386,7 @@ const App: React.FC = () => {
           onUpdateGroup={handleUpdateGroup}
           onDeleteGroup={handleDeleteGroup}
           onLogout={handleLogout}
+          onSettle={handleSettle}
           triggerConfirm={triggerConfirm}
         />
       )}
