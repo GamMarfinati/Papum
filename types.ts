@@ -25,7 +25,7 @@ export interface Expense {
   sharePercentage?: number; // Custom split for this specific expense
 }
 
-export type ViewState = 'loading' | 'registration' | 'dashboard' | 'month_list';
+export type ViewState = 'loading' | 'auth' | 'registration' | 'dashboard' | 'month_list';
 
 export interface HouseData {
   user: User | null;

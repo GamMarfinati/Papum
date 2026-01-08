@@ -7,6 +7,7 @@ import MonthList from './components/MonthList';
 import AddExpenseModal from './components/AddExpenseModal';
 import { supabase } from './services/supabaseClient';
 import ConfirmModal from './components/ConfirmModal';
+import Auth from './components/Auth';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('loading');
@@ -31,30 +32,81 @@ const App: React.FC = () => {
 
   // Load user from localStorage or URL on mount
   useEffect(() => {
-    // 1. Check for houseId in URL (?houseId=...)
-    const params = new URLSearchParams(window.location.search);
-    const urlHouseId = params.get('houseId');
+    const checkUser = async () => {
+      // 1. Check Auth Session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setView('auth');
+        return;
+      }
+
+      // 2. Load profile from Auth
+      const authUser = session.user;
+      const profile = {
+        name: authUser.user_metadata.full_name || '',
+        pix: authUser.user_metadata.pix || '',
+        phone: authUser.user_metadata.phone || '',
+      };
+
+      // 3. Check for saved house context
+      const savedUser = localStorage.getItem('house_user');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        // Merge auth profile with house context
+        const mergedUser = { ...parsedUser, ...profile };
+        setUser(mergedUser);
+        setView('dashboard');
+        if (mergedUser.houseId) {
+          fetchExpenses(mergedUser.houseId);
+          subscribeToExpenses(mergedUser.houseId);
+        }
+      } else {
+        setView('registration');
+      }
+    };
+
+    checkUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) setView('auth');
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleAuthSuccess = (session: any) => {
+    const profile = {
+      name: session.user.user_metadata.full_name || '',
+      pix: session.user.user_metadata.pix || '',
+      phone: session.user.user_metadata.phone || '',
+    };
     
-    // 2. Check for saved user
+    // Check if we have a saved house but no session previously
     const savedUser = localStorage.getItem('house_user');
-    
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
-      setUser(parsedUser);
+      const mergedUser = { ...parsedUser, ...profile };
+      setUser(mergedUser);
+      localStorage.setItem('house_user', JSON.stringify(mergedUser));
       setView('dashboard');
-      if (parsedUser.houseId) {
-        fetchExpenses(parsedUser.houseId);
-        subscribeToExpenses(parsedUser.houseId);
+      if (mergedUser.houseId) {
+        fetchExpenses(mergedUser.houseId);
+        subscribeToExpenses(mergedUser.houseId);
       }
     } else {
       setView('registration');
-      // If we have a houseId from the URL, we can pass it to the Registration component
-      if (urlHouseId) {
-        // We'll handle this in the Registration component via a prop if needed, 
-        // but for now, the URL stays there and Registration can read it.
-      }
     }
-  }, []);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem('house_user');
+    setUser(null);
+    setExpenses([]);
+    setView('auth');
+  };
 
   const fetchExpenses = async (houseId: string) => {
     const { data, error } = await supabase
@@ -263,15 +315,27 @@ const App: React.FC = () => {
 
   if (view === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-emerald-50">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+          <p className="font-black text-emerald-800 tracking-tighter text-2xl animate-pulse">PaPum</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 overflow-x-hidden">
-      {view === 'registration' && <Registration onRegister={handleRegister} triggerConfirm={triggerConfirm} />}
+      {view === 'auth' && <Auth onAuthSuccess={handleAuthSuccess} />}
+
+      {view === 'registration' && (
+        <Registration 
+          onRegister={handleRegister} 
+          triggerConfirm={triggerConfirm} 
+          initialProfile={user ? { name: user.name, pix: user.pix, phone: user.phone } : undefined}
+          onLogout={handleLogout}
+        />
+      )}
       
       {view === 'dashboard' && user && (
         <Dashboard 
@@ -281,6 +345,7 @@ const App: React.FC = () => {
           onLeaveHouse={handleLeaveHouse}
           onUpdateGroup={handleUpdateGroup}
           onDeleteGroup={handleDeleteGroup}
+          onLogout={handleLogout}
           triggerConfirm={triggerConfirm}
         />
       )}
