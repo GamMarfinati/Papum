@@ -372,7 +372,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
                   <span className="font-bold text-emerald-700 min-w-[3rem] text-right">{sharePercentage}%</span>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-2 font-bold italic">
-                  Seu parceiro(a) ficará com os outros {100 - parseInt(sharePercentage)}%.
+                  O(a) participante ficará com os outros {100 - parseInt(sharePercentage)}%.
                 </p>
               </div>
               

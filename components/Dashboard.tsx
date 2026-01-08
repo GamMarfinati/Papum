@@ -44,6 +44,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
   };
 
   // Settings Form State
+  const [editGroupName, setEditGroupName] = useState(user.houseName || '');
   const [editName, setEditName] = useState(user.name);
   const [editPix, setEditPix] = useState(user.pix);
   const [editShare, setEditShare] = useState(user.sharePercentage || 50);
@@ -51,7 +52,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     if (onUpdateGroup) {
-      onUpdateGroup({ name: editName, pix: editPix, sharePercentage: editShare });
+      onUpdateGroup({ name: editGroupName, pix: editPix, sharePercentage: editShare });
+      // Note: we can also update user.name locally if needed, 
+      // but App.tsx handleUpdateGroup handles merging.
       setShowSettings(false);
     }
   };
@@ -98,35 +101,52 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
             <h3 className="text-2xl font-black text-slate-900 mb-6">Ajustes do Grupo</h3>
             
             <form onSubmit={handleUpdate} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nome do Perfil</label>
-                <input 
-                  type="text" 
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                />
+              <div className="p-4 bg-slate-50 rounded-2xl space-y-4">
+                <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest border-b border-emerald-100 pb-2">Configurações do Grupo</h4>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nome do Grupo</label>
+                  <input 
+                    type="text" 
+                    value={editGroupName}
+                    onChange={(e) => setEditGroupName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm font-bold"
+                    placeholder="Ex: República, Viagem Jan..."
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Chave Pix</label>
-                <input 
-                  type="text" 
-                  value={editPix}
-                  onChange={(e) => setEditPix(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sua Parte Padrão (%)</label>
-                <input 
-                  type="range" min="0" max="100" step="5"
-                  value={editShare}
-                  onChange={(e) => setEditShare(parseInt(e.target.value))}
-                  className="w-full h-2 bg-emerald-100 rounded-lg appearance-none cursor-pointer accent-emerald-600 mb-2"
-                />
-                <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
-                   <span>Você: {editShare}%</span>
-                   <span>Parceiro: {100-editShare}%</span>
+
+              <div className="p-4 bg-slate-50 rounded-2xl space-y-4">
+                <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest border-b border-emerald-100 pb-2">Seu Perfil</h4>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Seu Nome</label>
+                  <input 
+                    type="text" 
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sua Chave Pix</label>
+                  <input 
+                    type="text" 
+                    value={editPix}
+                    onChange={(e) => setEditPix(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sua Parte Padrão (%)</label>
+                  <input 
+                    type="range" min="0" max="100" step="5"
+                    value={editShare}
+                    onChange={(e) => setEditShare(parseInt(e.target.value))}
+                    className="w-full h-2 bg-emerald-100 rounded-lg appearance-none cursor-pointer accent-emerald-600 mb-2"
+                  />
+                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
+                    <span>Você: {editShare}%</span>
+                    <span>Outros: {100-editShare}%</span>
+                  </div>
                 </div>
               </div>
 
@@ -276,7 +296,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
             <svg className="h-6 w-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>Seu parceiro(a) usará esta chave para te pagar no acerto de contas.</span>
+            <span>O(a) participante usará esta chave para te pagar no acerto de contas.</span>
           </div>
         </div>
         <div className="absolute top-0 right-0 -mr-16 -mt-16 opacity-10 group-hover:opacity-20 transition-opacity">

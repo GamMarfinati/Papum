@@ -70,7 +70,7 @@ const MonthList: React.FC<MonthListProps> = ({ expenses, onBack, onAddExpense, o
                         {isPayment ? '-' : ''}R$ {expense.value.toFixed(2)}
                       </p>
                       <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">
-                        {isPayment ? 'Pagou para parceiro' : `Pago por ${expense.paidBy.split(' ')[0]}`}
+                        {isPayment ? 'Pagou para participante' : `Pago por ${expense.paidBy.split(' ')[0]}`}
                       </p>
                     </div>
                   </div>

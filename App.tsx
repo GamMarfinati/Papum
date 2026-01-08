@@ -262,7 +262,13 @@ const App: React.FC = () => {
     }
 
     // Update local state and storage
-    const updatedUser = { ...user, ...groupData };
+    const updatedUser = { 
+      ...user, 
+      pix: groupData.pix || user.pix,
+      sharePercentage: groupData.sharePercentage ?? user.sharePercentage,
+      houseName: groupData.name || user.houseName
+    };
+    
     setUser(updatedUser);
     localStorage.setItem('house_user', JSON.stringify(updatedUser));
     
