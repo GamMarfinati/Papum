@@ -9,6 +9,7 @@ interface AddExpenseModalProps {
   onUpdate: (id: string, expense: Omit<Expense, 'id'>) => void;
   onDelete: (id: string) => void;
   initialData?: Expense | null;
+  triggerConfirm?: (config: { title: string, message: string, onConfirm: () => void, type?: 'danger' | 'info' }) => void;
 }
 
 const categories: ExpenseCategory[] = ['Casa', 'Mercado', 'Luz/Água', 'Internet', 'Outros'];
@@ -19,7 +20,8 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   onAdd, 
   onUpdate, 
   onDelete, 
-  initialData 
+  initialData,
+  triggerConfirm 
 }) => {
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
@@ -171,7 +173,19 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             {initialData && (
               <button
                 type="button"
-                onClick={() => { if(confirm('Excluir?')) { onDelete(initialData.id); onClose(); } }}
+                onClick={() => { 
+                  const deleteAction = () => { onDelete(initialData.id); onClose(); };
+                  if (triggerConfirm) {
+                    triggerConfirm({
+                      title: 'Excluir Despesa?',
+                      message: `Deseja apagar permanentemente "${initialData.name}"?`,
+                      type: 'danger',
+                      onConfirm: deleteAction
+                    });
+                  } else if(confirm('Excluir?')) { 
+                    deleteAction(); 
+                  }
+                }}
                 className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold py-4 rounded-2xl transition-all"
               >
                 Excluir Registro

@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import MonthList from './components/MonthList';
 import AddExpenseModal from './components/AddExpenseModal';
 import { supabase } from './services/supabaseClient';
+import ConfirmModal from './components/ConfirmModal';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('loading');
@@ -13,6 +14,20 @@ const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+
+  // Confirm Modal State
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: 'danger' | 'info';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Load user from localStorage or URL on mount
   useEffect(() => {
@@ -119,7 +134,13 @@ const App: React.FC = () => {
 
     if (error) {
       console.error('Error adding expense:', error);
-      alert('Erro ao salvar despesa no servidor');
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Ops! Erro',
+        message: 'Não conseguimos salvar sua despesa agora. Verifique se você está conectado à internet.',
+        type: 'danger',
+        onConfirm: () => setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+      });
     }
   };
 
@@ -177,20 +198,27 @@ const App: React.FC = () => {
 
   const handleDeleteGroup = async () => {
     if (!user?.houseId) return;
-    if (!confirm('TEM CERTEZA? Isso excluirá permanentemente o GRUPO e TODAS as despesas. Não há como desfazer!')) return;
-
-    // 1. Delete all expenses
-    await supabase.from('expenses').delete().eq('house_id', user.houseId);
     
-    // 2. Delete house config
-    await supabase.from('house_config').delete().eq('id', user.houseId);
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Excluir Grupo?',
+      message: 'TEM CERTEZA? Isso excluirá permanentemente o GRUPO e TODAS as despesas. Não há como desfazer!',
+      type: 'danger',
+      onConfirm: async () => {
+        // 1. Delete all expenses
+        await supabase.from('expenses').delete().eq('house_id', user.houseId as any);
+        
+        // 2. Delete house config
+        await supabase.from('house_config').delete().eq('id', user.houseId as any);
 
-    // 3. Clear local list
-    const recentGroups = JSON.parse(localStorage.getItem('papum_recent_groups') || '[]');
-    const filteredGroups = recentGroups.filter((g: any) => g.id !== user.houseId);
-    localStorage.setItem('papum_recent_groups', JSON.stringify(filteredGroups));
+        // 3. Clear local list
+        const recentGroups = JSON.parse(localStorage.getItem('papum_recent_groups') || '[]');
+        const filteredGroups = recentGroups.filter((g: any) => g.id !== user.houseId);
+        localStorage.setItem('papum_recent_groups', JSON.stringify(filteredGroups));
 
-    handleLeaveHouse();
+        handleLeaveHouse();
+      }
+    });
   };
 
   const handleDeleteExpense = async (id: string) => {
@@ -222,6 +250,17 @@ const App: React.FC = () => {
     setEditingExpense(null);
   };
 
+  const triggerConfirm = (config: { title: string, message: string, onConfirm: () => void, type?: 'danger' | 'info' }) => {
+    setConfirmConfig({
+      isOpen: true,
+      ...config,
+      onConfirm: () => {
+        config.onConfirm();
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
   if (view === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -232,7 +271,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 overflow-x-hidden">
-      {view === 'registration' && <Registration onRegister={handleRegister} />}
+      {view === 'registration' && <Registration onRegister={handleRegister} triggerConfirm={triggerConfirm} />}
       
       {view === 'dashboard' && user && (
         <Dashboard 
@@ -242,6 +281,7 @@ const App: React.FC = () => {
           onLeaveHouse={handleLeaveHouse}
           onUpdateGroup={handleUpdateGroup}
           onDeleteGroup={handleDeleteGroup}
+          triggerConfirm={triggerConfirm}
         />
       )}
 
@@ -254,6 +294,12 @@ const App: React.FC = () => {
         />
       )}
 
+      {/* Custom Global Modal */}
+      <ConfirmModal 
+        {...confirmConfig}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
+
       {showAddModal && user && (
         <AddExpenseModal 
           user={user}
@@ -262,6 +308,7 @@ const App: React.FC = () => {
           onUpdate={handleUpdateExpense}
           onDelete={handleDeleteExpense}
           initialData={editingExpense}
+          triggerConfirm={triggerConfirm}
         />
       )}
 

@@ -5,11 +5,20 @@ import { supabase } from '../services/supabaseClient';
 
 interface RegistrationProps {
   onRegister: (user: User) => void;
+  triggerConfirm?: (config: { title: string, message: string, onConfirm: () => void, type?: 'danger' | 'info' }) => void;
 }
 
-const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
+const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm }) => {
   const [mode, setMode] = useState<'initial' | 'create' | 'join'>('initial');
   const [joinId, setJoinId] = useState('');
+  const [name, setName] = useState('');
+  const [pix, setPix] = useState('');
+  const [phone, setPhone] = useState('');
+  const [roommates, setRoommates] = useState('2');
+  const [sharePercentage, setSharePercentage] = useState('50');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   // Load Profile from localStorage on mount
   React.useEffect(() => {
@@ -27,15 +36,25 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
       setJoinId(urlHouseId);
       setMode('join');
     }
+
+    // PWA Install Prompt
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as any);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as any);
   }, []);
 
-  const [name, setName] = useState('');
-  const [pix, setPix] = useState('');
-  const [phone, setPhone] = useState('');
-  const [roommates, setRoommates] = useState('2');
-  const [sharePercentage, setSharePercentage] = useState('50');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   const saveProfile = (p: { name: string, pix: string, phone: string }) => {
     localStorage.setItem('papum_user_profile', JSON.stringify(p));
@@ -176,6 +195,20 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
             </button>
           </div>
 
+          {deferredPrompt && (
+            <div className="pt-2 animate-fadeIn">
+              <button 
+                onClick={handleInstallClick}
+                className="w-full flex items-center justify-center space-x-2 bg-emerald-50 text-emerald-700 font-black py-4 rounded-2xl border-2 border-emerald-100 hover:bg-emerald-100 transition-all active:scale-95"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span>Instalar App na tela inicial</span>
+              </button>
+            </div>
+          )}
+
           {recentGroups.length > 0 && (
             <div className="pt-6 border-t border-slate-50">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Meus grupos</h3>
@@ -200,10 +233,25 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        if(confirm(`Remover "${group.name}" da lista?`)) {
+                        const removeAction = () => {
                           const updated = recentGroups.filter(g => g.id !== group.id);
                           setRecentGroups(updated);
                           localStorage.setItem('papum_recent_groups', JSON.stringify(updated));
+                        };
+
+                        if (triggerConfirm) {
+                          triggerConfirm({
+                            title: 'Remover Grupo?',
+                            message: `Deseja remover "${group.name}" da sua lista de grupos recentes?`,
+                            onConfirm: () => {
+                              removeAction();
+                              // Close this custom modal after action
+                              // (App.tsx handles closing via state update in triggerConfirm wrapper if we wanted, 
+                              // but here we just need to ensure the action runs)
+                            }
+                          });
+                        } else if (confirm(`Remover "${group.name}" da lista?`)) {
+                          removeAction();
                         }
                       }}
                       className="absolute -right-2 -top-2 p-1.5 bg-white border border-slate-100 text-slate-300 hover:text-rose-500 rounded-lg shadow-sm opacity-0 group-hover/item:opacity-100 transition-opacity"
