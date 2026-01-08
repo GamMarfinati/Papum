@@ -70,11 +70,23 @@ const App: React.FC = () => {
 
       // 3. Check for saved house context
       const savedUser = localStorage.getItem('house_user');
+      let mergedUser: User | null = null;
+
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser);
-        // Merge auth profile with house context
-        const mergedUser = { ...parsedUser, ...profile };
-        
+        mergedUser = { ...parsedUser, ...profile };
+      } else if (authUser.user_metadata.last_group_id) {
+        // Recognition from metadata if local storage is empty
+        mergedUser = {
+          ...profile,
+          houseId: authUser.user_metadata.last_group_id,
+          houseName: authUser.user_metadata.last_group_name,
+          roommates: 2, // fallback
+          sharePercentage: 50 // fallback
+        };
+      }
+
+      if (mergedUser) {
         if (mergedUser.houseId) {
           // Fetch house name if missing
           if (!mergedUser.houseName) {
@@ -83,6 +95,7 @@ const App: React.FC = () => {
           }
           
           setUser(mergedUser);
+          localStorage.setItem('house_user', JSON.stringify(mergedUser));
           setView('dashboard');
           fetchExpenses(mergedUser.houseId);
           subscribeToExpenses(mergedUser.houseId);
@@ -111,11 +124,23 @@ const App: React.FC = () => {
       phone: session.user.user_metadata.phone || '',
     };
     
-    // Check if we have a saved house but no session previously
     const savedUser = localStorage.getItem('house_user');
+    let mergedUser: User | null = null;
+
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
-      const mergedUser = { ...parsedUser, ...profile };
+      mergedUser = { ...parsedUser, ...profile };
+    } else if (session.user.user_metadata.last_group_id) {
+      mergedUser = {
+        ...profile,
+        houseId: session.user.user_metadata.last_group_id,
+        houseName: session.user.user_metadata.last_group_name,
+        roommates: 2,
+        sharePercentage: 50
+      };
+    }
+
+    if (mergedUser) {
       setUser(mergedUser);
       localStorage.setItem('house_user', JSON.stringify(mergedUser));
       setView('dashboard');
@@ -135,7 +160,6 @@ const App: React.FC = () => {
     setExpenses([]);
     setView('auth');
   };
-
   const fetchExpenses = async (houseId: string) => {
     const { data, error } = await supabase
       .from('expenses')
@@ -178,8 +202,8 @@ const App: React.FC = () => {
   const handleRegister = (newUser: User) => {
     setUser(newUser);
     localStorage.setItem('house_user', JSON.stringify(newUser));
-    
-    // Save to recent groups
+
+    // Save to Supabase metadata to persist across devices
     if (newUser.houseId) {
       const recentGroups = JSON.parse(localStorage.getItem('papum_recent_groups') || '[]');
       const groupName = newUser.houseName || (newUser.name.endsWith('s Group') ? newUser.name : `${newUser.name}'s Group`);
@@ -187,7 +211,15 @@ const App: React.FC = () => {
       // Prevent duplicates
       const filteredGroups = recentGroups.filter((g: any) => g.id !== newUser.houseId);
       const updatedGroups = [{ id: newUser.houseId, name: groupName }, ...filteredGroups].slice(0, 5);
-      
+
+      supabase.auth.updateUser({
+        data: { 
+          last_group_id: newUser.houseId,
+          last_group_name: newUser.houseName,
+          group_list: updatedGroups 
+        }
+      });
+
       localStorage.setItem('papum_recent_groups', JSON.stringify(updatedGroups));
       
       fetchExpenses(newUser.houseId);
