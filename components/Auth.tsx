@@ -15,11 +15,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setMessage('');
 
     try {
       if (mode === 'signup') {
@@ -35,7 +37,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           }
         });
         if (signUpError) throw signUpError;
-        alert('Confirme seu e-mail para ativar sua conta!');
+        setMessage('📨 Quase lá! Enviamos um link de confirmação para o seu e-mail. Ative sua conta para entrar.');
         setMode('login');
       } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -75,6 +77,12 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         {error && (
           <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-bold border border-rose-100 animate-fadeIn text-center">
             {error}
+          </div>
+        )}
+
+        {message && (
+          <div className="p-4 bg-emerald-50 text-emerald-700 rounded-2xl text-sm font-bold border border-emerald-100 animate-fadeIn text-center">
+            {message}
           </div>
         )}
 
