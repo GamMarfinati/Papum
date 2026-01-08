@@ -11,8 +11,16 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
   const [mode, setMode] = useState<'initial' | 'create' | 'join'>('initial');
   const [joinId, setJoinId] = useState('');
 
-  // Detect House ID from URL or Recent Groups
+  // Load Profile from localStorage on mount
   React.useEffect(() => {
+    const savedProfile = localStorage.getItem('papum_user_profile');
+    if (savedProfile) {
+      const profile = JSON.parse(savedProfile);
+      setName(profile.name || '');
+      setPix(profile.pix || '');
+      setPhone(profile.phone || '');
+    }
+
     const params = new URLSearchParams(window.location.search);
     const urlHouseId = params.get('houseId');
     if (urlHouseId) {
@@ -28,6 +36,10 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
   const [sharePercentage, setSharePercentage] = useState('50');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const saveProfile = (p: { name: string, pix: string, phone: string }) => {
+    localStorage.setItem('papum_user_profile', JSON.stringify(p));
+  };
 
   const handleCreateHouse = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +60,8 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
         .single();
 
       if (insertError) throw insertError;
+      
+      saveProfile({ name, pix, phone });
 
       onRegister({ 
         name, 
@@ -80,6 +94,8 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
 
       // For the joining person, we assume they take the remaining percentage (100 - share_percentage)
       const joiningPercentage = 100 - (data.share_percentage || 50);
+
+      saveProfile({ name, pix: data.pix, phone: data.phone });
 
       onRegister({ 
         name, 
