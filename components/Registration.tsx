@@ -20,6 +20,9 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [inviteHouseId, setInviteHouseId] = useState<string | null>(null);
+  const [inviteHouseName, setInviteHouseName] = useState<string>('');
+  const [inviteLoading, setInviteLoading] = useState(false);
 
   /* Load recent groups */
   const [recentGroups, setRecentGroups] = useState<any[]>([]);
@@ -41,6 +44,14 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
 
   // Load Profile from localStorage on mount
   React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlHouseId = params.get('houseId');
+    if (urlHouseId) {
+      setInviteHouseId(urlHouseId);
+    }
+
+  // Load Profile from localStorage on mount
+  React.useEffect(() => {
     // PWA Install Prompt
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
@@ -50,6 +61,31 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as any);
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as any);
   }, []);
+
+  React.useEffect(() => {
+    const fetchInviteGroup = async () => {
+      if (!inviteHouseId) return;
+      setInviteLoading(true);
+      setError('');
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('house_config')
+          .select('name')
+          .eq('id', inviteHouseId)
+          .single();
+
+        if (fetchError || !data) throw new Error('Convite de grupo inválido.');
+        setInviteHouseName(data.name);
+      } catch (err: any) {
+        setInviteHouseName('');
+        setError(err.message || 'Não foi possível carregar o convite.');
+      } finally {
+        setInviteLoading(false);
+      }
+    };
+
+    fetchInviteGroup();
+  }, [inviteHouseId]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -102,6 +138,45 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
     }
   };
 
+  const handleJoinInvite = async () => {
+    if (!inviteHouseId) return;
+    const resolvedName = initialProfile?.name || name;
+    if (!resolvedName) {
+      setError('Informe seu nome para entrar no grupo.');
+      return;
+    }
+    setInviteLoading(true);
+    setError('');
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('house_config')
+        .select('*')
+        .eq('id', inviteHouseId)
+        .single();
+
+      if (fetchError || !data) throw new Error('Convite de grupo inválido.');
+
+      const joiningPercentage = 100 - (data.share_percentage || 50);
+
+      saveProfile({ name: resolvedName, pix: data.pix, phone: data.phone });
+
+      onRegister({
+        name: resolvedName,
+        pix: data.pix,
+        phone: data.phone,
+        roommates: data.roommates,
+        houseId: data.id,
+        houseName: data.name,
+        sharePercentage: joiningPercentage
+      });
+    } catch (err: any) {
+      setError(err.message || 'Falha ao entrar no grupo.');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
   const handleWhatsAppShare = () => {
     const message = `Oi! Vamos usar o PaPum para dividir nossas contas de casa: ${window.location.origin}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
@@ -144,6 +219,40 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
               Novo Grupo
             </button>
           </div>
+
+          {error && (
+            <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-bold border border-rose-100 animate-fadeIn text-center">
+              {error}
+            </div>
+          )}
+
+          {inviteHouseId && (
+            <div className="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4 space-y-3 text-left">
+              <p className="text-xs font-black text-emerald-600 uppercase tracking-widest">Convite para grupo</p>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-slate-700">
+                    {inviteLoading ? 'Carregando grupo...' : (inviteHouseName || 'Grupo')}
+                  </p>
+                  <p className="text-[11px] text-slate-400 font-medium">Entre para acompanhar as despesas.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (initialProfile?.name) {
+                      handleJoinInvite();
+                    } else {
+                      setMode('create');
+                    }
+                  }}
+                  disabled={inviteLoading}
+                  className="bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs hover:bg-emerald-700 transition-all disabled:opacity-50"
+                >
+                  {initialProfile?.name ? 'Entrar' : 'Completar perfil'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {deferredPrompt && (
             <div className="pt-2 animate-fadeIn">
@@ -273,6 +382,28 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
         </div>
 
         {error && <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-bold border border-rose-100 animate-fadeIn text-center">{error}</div>}
+
+        {inviteHouseId && (
+          <div className="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4 space-y-3 text-left">
+            <p className="text-xs font-black text-emerald-600 uppercase tracking-widest">Convite para grupo</p>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-slate-700">
+                  {inviteLoading ? 'Carregando grupo...' : (inviteHouseName || 'Grupo')}
+                </p>
+                <p className="text-[11px] text-slate-400 font-medium">Entre sem precisar digitar o ID.</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleJoinInvite}
+                disabled={inviteLoading}
+                className="bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs hover:bg-emerald-700 transition-all disabled:opacity-50"
+              >
+                Entrar
+              </button>
+            </div>
+          </div>
+        )}
         
         <form onSubmit={handleCreateHouse} className="space-y-4">
           {!initialProfile?.name ? (

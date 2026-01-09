@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Expense, User } from '../types';
 import SettleModal from './SettleModal';
 
@@ -18,6 +18,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSettleModal, setShowSettleModal] = useState(false);
+  const [friends, setFriends] = useState<string[]>([]);
+  const [inviteCopied, setInviteCopied] = useState(false);
   
   // 1. Calculate totals
   const totalExpenses = expenses
@@ -37,10 +39,53 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
   const partnerName = expenses.find(e => e.paidBy !== user.name)?.paidBy || "Participante";
   const baseShare = user.sharePercentage ?? 50;
 
+  const groupParticipants = useMemo(() => {
+    const names = expenses
+      .map(expense => expense.paidBy)
+      .filter(name => name && name !== user.name);
+    return Array.from(new Set(names));
+  }, [expenses, user.name]);
+
+  useEffect(() => {
+    const storedFriends = JSON.parse(localStorage.getItem('papum_friends') || '[]');
+    if (Array.isArray(storedFriends)) {
+      setFriends(storedFriends);
+    }
+  }, []);
+
+  const saveFriends = (nextFriends: string[]) => {
+    setFriends(nextFriends);
+    localStorage.setItem('papum_friends', JSON.stringify(nextFriends));
+  };
+
+  const handleAddFriend = (friendName: string) => {
+    if (!friendName || friends.includes(friendName)) return;
+    saveFriends([friendName, ...friends]);
+  };
+
+  const handleRemoveFriend = (friendName: string) => {
+    saveFriends(friends.filter(name => name !== friendName));
+  };
+
   const copyPix = () => {
     navigator.clipboard.writeText(user.pix);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const inviteLink = user.houseId ? `${window.location.origin}?houseId=${user.houseId}` : '';
+
+  const handleCopyInvite = () => {
+    if (!inviteLink) return;
+    navigator.clipboard.writeText(inviteLink);
+    setInviteCopied(true);
+    setTimeout(() => setInviteCopied(false), 2000);
+  };
+
+  const handleShareInvite = () => {
+    if (!inviteLink) return;
+    const message = `Oi! Entre no meu grupo do PaPum para dividir as despesas: ${inviteLink}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   // Settings Form State
@@ -116,6 +161,36 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
               </div>
 
               <div className="p-4 bg-slate-50 rounded-2xl space-y-4">
+                <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest border-b border-emerald-100 pb-2">Convite para o Grupo</h4>
+                <p className="text-xs font-bold text-slate-500">
+                  Compartilhe este link para adicionar alguém ao grupo.
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={inviteLink || 'Link indisponível'}
+                    className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopyInvite}
+                    disabled={!inviteLink}
+                    className="px-3 py-2 rounded-xl text-xs font-black bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all disabled:opacity-50"
+                  >
+                    {inviteCopied ? 'Copiado' : 'Copiar'}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleShareInvite}
+                  disabled={!inviteLink}
+                  className="w-full bg-emerald-600 text-white font-black py-3 rounded-2xl shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all disabled:opacity-50"
+                >
+                  Compartilhar no WhatsApp
+                </button>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl space-y-4">
                 <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest border-b border-emerald-100 pb-2">Seu Perfil</h4>
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Seu Nome</label>
@@ -148,6 +223,54 @@ const Dashboard: React.FC<DashboardProps> = ({ user, expenses, onNavigateToMonth
                     <span>Outros: {100-editShare}%</span>
                   </div>
                 </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl space-y-4">
+                <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest border-b border-emerald-100 pb-2">Amigos do Grupo</h4>
+                {groupParticipants.length === 0 ? (
+                  <p className="text-xs font-bold text-slate-400">
+                    Nenhum participante encontrado ainda. Registre despesas para ver quem está no grupo.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {groupParticipants.map(participant => {
+                      const isFriend = friends.includes(participant);
+                      return (
+                        <div key={participant} className="flex items-center justify-between rounded-xl bg-white px-4 py-3 border border-slate-100">
+                          <span className="text-sm font-bold text-slate-700">{participant}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleAddFriend(participant)}
+                            disabled={isFriend}
+                            className="text-xs font-black px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isFriend ? 'Já é amigo' : 'Adicionar'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {friends.length > 0 && (
+                  <div className="pt-2 border-t border-emerald-100 space-y-2">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sua lista</p>
+                    <div className="space-y-2">
+                      {friends.map(friend => (
+                        <div key={friend} className="flex items-center justify-between rounded-xl bg-white px-4 py-3 border border-slate-100">
+                          <span className="text-sm font-bold text-slate-700">{friend}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFriend(friend)}
+                            className="text-xs font-black px-3 py-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all"
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="pt-6 space-y-3">
