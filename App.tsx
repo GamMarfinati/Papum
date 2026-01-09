@@ -111,10 +111,14 @@ const App: React.FC = () => {
 
       if (mergedUser) {
         if (mergedUser.houseId) {
-          // Fetch house name if missing
-          if (!mergedUser.houseName) {
-             const { data: hData } = await supabase.from('house_config').select('name').eq('id', mergedUser.houseId).single();
-             if (hData) mergedUser.houseName = hData.name;
+          // Fetch house config to ensure settings are up to date
+          const { data: hData } = await supabase.from('house_config').select('*').eq('id', mergedUser.houseId).single();
+          if (hData) {
+             mergedUser.houseName = hData.name;
+             mergedUser.roommates = hData.roommates;
+             // Apply ownership heuristic
+             const isOwner = (mergedUser.pix === hData.pix) || (hData.name && mergedUser.name && hData.name.trim().toLowerCase().startsWith(mergedUser.name.trim().toLowerCase()));
+             mergedUser.sharePercentage = isOwner ? (hData.share_percentage || 50) : (100 - (hData.share_percentage || 50));
           }
           
           setUser(mergedUser);
@@ -144,7 +148,7 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleAuthSuccess = (session: any) => {
+  const handleAuthSuccess = async (session: any) => {
     const profile = {
       name: session.user.user_metadata.full_name || '',
       pix: session.user.user_metadata.pix || '',
@@ -178,6 +182,18 @@ const App: React.FC = () => {
     }
 
     if (mergedUser) {
+      if (mergedUser.houseId) {
+          // Fetch house config to ensure settings are up to date
+          const { data: hData } = await supabase.from('house_config').select('*').eq('id', mergedUser.houseId).single();
+          if (hData) {
+             mergedUser.houseName = hData.name;
+             mergedUser.roommates = hData.roommates;
+             // Apply ownership heuristic
+             const isOwner = (mergedUser.pix === hData.pix) || (hData.name && mergedUser.name && hData.name.trim().toLowerCase().startsWith(mergedUser.name.trim().toLowerCase()));
+             mergedUser.sharePercentage = isOwner ? (hData.share_percentage || 50) : (100 - (hData.share_percentage || 50));
+          }
+      }
+
       setUser(mergedUser);
       localStorage.setItem('house_user', JSON.stringify(mergedUser));
       setView('dashboard');

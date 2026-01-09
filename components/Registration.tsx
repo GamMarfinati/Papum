@@ -294,15 +294,30 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
                                throw new Error('Grupo não encontrado ou sem permissão.');
                             }
                             
-                            const joiningPercentage = 100 - (data.share_percentage || 50);
+                            // Determine if current user is likely the owner of the group
+                            // Heuristics:
+                            // 1. Pix matches the one in config
+                            // 2. Group name starts with User's name (default naming convention)
+                            const isOwner = (userProfile.pix && userProfile.pix === data.pix) || 
+                                          (data.name && userProfile.name && data.name.trim().toLowerCase().startsWith(userProfile.name.trim().toLowerCase()));
+
+                            const calculatedShare = isOwner 
+                              ? (data.share_percentage || 50) 
+                              : (100 - (data.share_percentage || 50));
+
+                            // If owner, we can use the stored group pix/phone if local is missing.
+                            // If guest, NEVER use the group pix/phone as it belongs to owner.
+                            const finalPix = userProfile.pix || (isOwner ? data.pix : '');
+                            const finalPhone = userProfile.phone || (isOwner ? data.phone : '');
+
                             onRegister({ 
                               name: userProfile.name, 
-                              pix: data.pix, 
-                              phone: data.phone, 
+                              pix: finalPix,
+                              phone: finalPhone, 
                               roommates: data.roommates,
                               houseId: data.id,
                               houseName: data.name,
-                              sharePercentage: joiningPercentage
+                              sharePercentage: calculatedShare
                             });
                           } catch (err: any) {
                             console.error('Auto-join failed:', err);
