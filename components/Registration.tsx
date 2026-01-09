@@ -395,11 +395,17 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
               </div>
               <button
                 type="button"
-                onClick={handleJoinInvite}
+                onClick={() => {
+                  if (initialProfile?.name) {
+                    handleJoinInvite();
+                  } else {
+                    setMode('create');
+                  }
+                }}
                 disabled={inviteLoading}
                 className="bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs hover:bg-emerald-700 transition-all disabled:opacity-50"
               >
-                Entrar
+                {initialProfile?.name ? 'Entrar' : 'Completar perfil'}
               </button>
             </div>
           </div>
