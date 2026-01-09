@@ -34,6 +34,12 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
     return () => window.removeEventListener('papum-groups-updated', loadGroups);
   }, [initialProfile]);
 
+  React.useEffect(() => {
+    if (initialProfile?.name) setName(initialProfile.name);
+    if (initialProfile?.pix) setPix(initialProfile.pix);
+    if (initialProfile?.phone) setPhone(initialProfile.phone);
+  }, [initialProfile]);
+
   // Load Profile from localStorage on mount
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -110,6 +116,10 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
     setError('');
 
     try {
+      const resolvedName = initialProfile?.name || name;
+      if (!resolvedName) {
+        throw new Error('Informe seu nome para entrar no grupo.');
+      }
       const { data, error: fetchError } = await supabase
         .from('house_config')
         .select('*')
@@ -120,10 +130,10 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
 
       const joiningPercentage = 100 - (data.share_percentage || 50);
 
-      saveProfile({ name, pix: data.pix, phone: data.phone });
+      saveProfile({ name: resolvedName, pix: data.pix, phone: data.phone });
 
       onRegister({ 
-        name, 
+        name: resolvedName, 
         pix: data.pix, 
         phone: data.phone, 
         roommates: data.roommates,
@@ -321,17 +331,23 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
         {error && <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-bold border border-rose-100 animate-fadeIn text-center">{error}</div>}
         
         <form onSubmit={mode === 'create' ? handleCreateHouse : handleJoinHouse} className="space-y-4">
-          <div>
-            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Seu Nome</label>
-            <input
-              required
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
-              placeholder="Ex: João"
-            />
-          </div>
+          {(mode === 'create' || !initialProfile?.name) ? (
+            <div>
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Seu Nome</label>
+              <input
+                required
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
+                placeholder="Ex: João"
+              />
+            </div>
+          ) : (
+            <div className="bg-emerald-50 text-emerald-700 font-bold text-sm rounded-2xl px-5 py-4 text-center">
+              Entrando como <span className="font-black">{initialProfile.name}</span>
+            </div>
+          )}
 
           {mode === 'join' && (
             <div>
