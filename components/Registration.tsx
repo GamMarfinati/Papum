@@ -430,7 +430,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
             </div>
           )}
 
-          <>
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Chave Pix</label>
@@ -486,7 +486,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
                 placeholder="(00) 00000-0000"
               />
             </div>
-          </>
+          </div>
 
           <button
             type="submit"
