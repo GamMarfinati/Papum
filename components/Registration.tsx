@@ -50,6 +50,8 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
       setInviteHouseId(urlHouseId);
     }
 
+  // Load Profile from localStorage on mount
+  React.useEffect(() => {
     // PWA Install Prompt
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
