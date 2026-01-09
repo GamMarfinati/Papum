@@ -49,6 +49,7 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, triggerConfirm,
     if (urlHouseId) {
       setInviteHouseId(urlHouseId);
     }
+  }, []);
 
   // Load Profile from localStorage on mount
   React.useEffect(() => {
